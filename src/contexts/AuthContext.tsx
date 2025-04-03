@@ -6,6 +6,8 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  error: string | null;
+  formSubmitting: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (
     email: string,
@@ -14,6 +16,7 @@ interface AuthContextType {
   ) => Promise<{ error: any; user: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formSubmitting, setFormSubmitting] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -44,59 +49,124 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      setFormSubmitting(true);
+      setError(null);
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      }
+
+      return { error };
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+      return { error: err };
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   const signUp = async (email: string, password: string, userData: any) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData,
-      },
-    });
+    try {
+      setFormSubmitting(true);
+      setError(null);
 
-    // If signup is successful, create a profile record
-    if (data.user && !error) {
-      const { error: profileError } = await supabase.from("profiles").insert([
-        {
-          id: data.user.id,
-          full_name: userData.full_name,
-          avatar_url: userData.avatar_url,
-          email: email,
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData,
         },
-      ]);
+      });
 
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-        return { error: profileError, user: null };
+      if (error) {
+        setError(error.message);
+        return { error, user: null };
       }
-    }
 
-    return { error, user: data.user };
+      // If signup is successful, create a profile record
+      if (data.user) {
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            id: data.user.id,
+            full_name: userData.full_name,
+            avatar_url: userData.avatar_url || null,
+            email: email,
+          },
+        ]);
+
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+          setError(
+            "Account created but profile setup failed. Please contact support.",
+          );
+          return { error: profileError, user: null };
+        }
+      }
+
+      return { error, user: data.user };
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+      return { error: err, user: null };
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      setFormSubmitting(true);
+      setError(null);
+      await supabase.auth.signOut();
+    } catch (err: any) {
+      setError(err.message || "Failed to sign out");
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    return { error };
+    try {
+      setFormSubmitting(true);
+      setError(null);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setError(error.message);
+      }
+
+      return { error };
+    } catch (err: any) {
+      setError(err.message || "Failed to send password reset email");
+      return { error: err };
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const value = {
     session,
     user,
     loading,
+    error,
+    formSubmitting,
     signIn,
     signUp,
     signOut,
     resetPassword,
+    clearError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
