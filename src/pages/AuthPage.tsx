@@ -1,14 +1,40 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from "@/components/auth/LoginForm";
 import SignupForm from "@/components/auth/SignupForm";
 import { BookOpen } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function AuthPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isSignup = location.pathname === "/signup";
   const [activeTab, setActiveTab] = useState(isSignup ? "signup" : "login");
+  const { user, error, clearError } = useAuth();
+
+  // Handle successful authentication
+  useEffect(() => {
+    if (user) {
+      toast.success("Authentication successful", {
+        description: "Welcome to IELTS & PTE Prep!",
+        duration: 3000,
+      });
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (error) {
+      toast.error("Authentication failed", {
+        description: error,
+        duration: 5000,
+      });
+      clearError();
+    }
+  }, [error, clearError]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">

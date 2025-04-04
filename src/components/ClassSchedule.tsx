@@ -1,10 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Clock, User, Video, Filter } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  User,
+  Video,
+  Filter,
+  Loader,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAllClasses, getClassesByCategory } from "@/services/classService";
+import { toast } from "sonner";
 
 interface ClassProps {
   id: string;
@@ -21,9 +32,40 @@ interface ClassProps {
 
 const ClassSchedule = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [filter, setFilter] = useState("all");
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for scheduled classes
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let data;
+        if (filter === "all") {
+          data = await getAllClasses();
+        } else {
+          data = await getClassesByCategory(filter);
+        }
+
+        setClasses(data);
+      } catch (err) {
+        console.error("Error fetching classes:", err);
+        setError("Failed to load classes. Please try again.");
+        // Fallback to mock data if API fails
+        setClasses(scheduledClasses);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClasses();
+  }, [filter]);
+
+  // Mock data for scheduled classes (fallback)
   const scheduledClasses = [
     {
       id: "1",
@@ -111,10 +153,12 @@ const ClassSchedule = () => {
     },
   ];
 
-  const filteredClasses =
-    filter === "all"
-      ? scheduledClasses
-      : scheduledClasses.filter((cls) => cls.category.toLowerCase() === filter);
+  // We're now filtering on the server side through the API calls
+  const filteredClasses = classes;
+
+  const handleRequestClass = () => {
+    toast.success("Class request submitted! We'll contact you soon.");
+  };
 
   const ClassCard = ({ classData }: { classData: ClassProps }) => (
     <Card
@@ -180,74 +224,102 @@ const ClassSchedule = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="all" className="mb-6">
-          <div className="flex items-center mb-4">
-            <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium mr-4">Filter by:</span>
-            <TabsList>
-              <TabsTrigger value="all" onClick={() => setFilter("all")}>
-                All
-              </TabsTrigger>
-              <TabsTrigger
-                value="speaking"
-                onClick={() => setFilter("speaking")}
-              >
-                Speaking
-              </TabsTrigger>
-              <TabsTrigger value="writing" onClick={() => setFilter("writing")}>
-                Writing
-              </TabsTrigger>
-              <TabsTrigger value="reading" onClick={() => setFilter("reading")}>
-                Reading
-              </TabsTrigger>
-              <TabsTrigger
-                value="listening"
-                onClick={() => setFilter("listening")}
-              >
-                Listening
-              </TabsTrigger>
-              <TabsTrigger value="general" onClick={() => setFilter("general")}>
-                General
-              </TabsTrigger>
-            </TabsList>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Loading classes...</span>
           </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
+            <p>{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          </div>
+        ) : (
+          <Tabs defaultValue="all" className="mb-6">
+            <div className="flex items-center mb-4">
+              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium mr-4">Filter by:</span>
+              <TabsList>
+                <TabsTrigger value="all" onClick={() => setFilter("all")}>
+                  All
+                </TabsTrigger>
+                <TabsTrigger
+                  value="Speaking"
+                  onClick={() => setFilter("Speaking")}
+                >
+                  Speaking
+                </TabsTrigger>
+                <TabsTrigger
+                  value="Writing"
+                  onClick={() => setFilter("Writing")}
+                >
+                  Writing
+                </TabsTrigger>
+                <TabsTrigger
+                  value="Reading"
+                  onClick={() => setFilter("Reading")}
+                >
+                  Reading
+                </TabsTrigger>
+                <TabsTrigger
+                  value="Listening"
+                  onClick={() => setFilter("Listening")}
+                >
+                  Listening
+                </TabsTrigger>
+                <TabsTrigger
+                  value="General"
+                  onClick={() => setFilter("General")}
+                >
+                  General
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <TabsContent value="all" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
+            <TabsContent value="all" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
 
-          <TabsContent value="speaking" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
+            <TabsContent value="speaking" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
 
-          <TabsContent value="writing" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
+            <TabsContent value="writing" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
 
-          <TabsContent value="reading" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
+            <TabsContent value="reading" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
 
-          <TabsContent value="listening" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
+            <TabsContent value="listening" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
 
-          <TabsContent value="general" className="mt-0">
-            {filteredClasses.map((classData) => (
-              <ClassCard key={classData.id} classData={classData} />
-            ))}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="general" className="mt-0">
+              {filteredClasses.map((classData) => (
+                <ClassCard key={classData.id} classData={classData} />
+              ))}
+            </TabsContent>
+          </Tabs>
+        )}
 
         <Card className="bg-primary/5 border-dashed border-primary/30">
           <CardContent className="flex flex-col items-center justify-center py-8">
@@ -259,7 +331,7 @@ const ClassSchedule = () => {
               If you need help with a specific topic, you can request a custom
               live class
             </p>
-            <Button>Request a Class</Button>
+            <Button onClick={handleRequestClass}>Request a Class</Button>
           </CardContent>
         </Card>
       </main>

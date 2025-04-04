@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,9 @@ import {
   AlertCircle,
   CheckCircle,
   HelpCircle,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface TestSection {
   id: number;
@@ -17,6 +19,17 @@ interface TestSection {
   questions: number;
   duration: string;
   description: string;
+}
+
+interface TestData {
+  id: string;
+  title: string;
+  type: "Mock Test" | "Practice Test" | "Section Test";
+  duration: string;
+  questions: number;
+  description: string;
+  instructions: string[];
+  sections: TestSection[];
 }
 
 const TestDetails = () => {
@@ -27,59 +40,86 @@ const TestDetails = () => {
   const [currentSection, setCurrentSection] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [testCompleted, setTestCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [test, setTest] = useState<TestData | null>(null);
+  const [answers, setAnswers] = useState({});
 
-  // Mock data for a test
-  const test = {
-    id: testId,
-    title: "Full IELTS Mock Test",
-    type: "Mock Test",
-    duration: "2 hours 45 minutes",
-    questions: 40,
-    description:
-      "This comprehensive mock test simulates the actual IELTS exam environment and covers all four sections: Listening, Reading, Writing, and Speaking. Your responses will be evaluated based on the official IELTS marking criteria.",
-    instructions: [
-      "This test must be completed in one sitting.",
-      "You will not be able to pause the timer once the test begins.",
-      "Ensure you have a quiet environment and stable internet connection.",
-      "For the speaking section, you will need a microphone.",
-      "Your results will be available immediately after completion.",
-    ],
-    sections: [
-      {
-        id: 1,
-        title: "Listening",
-        questions: 40,
-        duration: "30 minutes",
-        description:
-          "Four recorded conversations and monologues with 40 questions.",
-      },
-      {
-        id: 2,
-        title: "Reading",
-        questions: 40,
-        duration: "60 minutes",
-        description: "Three reading passages with a total of 40 questions.",
-      },
-      {
-        id: 3,
-        title: "Writing",
-        questions: 2,
-        duration: "60 minutes",
-        description:
-          "Two writing tasks: a graph/chart description and an essay.",
-      },
-      {
-        id: 4,
-        title: "Speaking",
-        questions: 3,
-        duration: "15 minutes",
-        description: "Three-part speaking assessment with an examiner.",
-      },
-    ],
-  };
+  // Fetch test data
+  useEffect(() => {
+    const fetchTestData = async () => {
+      setIsLoading(true);
+      try {
+        // Simulate API call
+        setTimeout(() => {
+          // Mock data for a test
+          setTest({
+            id: testId,
+            title: "Full IELTS Mock Test",
+            type: "Mock Test",
+            duration: "2 hours 45 minutes",
+            questions: 40,
+            description:
+              "This comprehensive mock test simulates the actual IELTS exam environment and covers all four sections: Listening, Reading, Writing, and Speaking. Your responses will be evaluated based on the official IELTS marking criteria.",
+            instructions: [
+              "This test must be completed in one sitting.",
+              "You will not be able to pause the timer once the test begins.",
+              "Ensure you have a quiet environment and stable internet connection.",
+              "For the speaking section, you will need a microphone.",
+              "Your results will be available immediately after completion.",
+            ],
+            sections: [
+              {
+                id: 1,
+                title: "Listening",
+                questions: 40,
+                duration: "30 minutes",
+                description:
+                  "Four recorded conversations and monologues with 40 questions.",
+              },
+              {
+                id: 2,
+                title: "Reading",
+                questions: 40,
+                duration: "60 minutes",
+                description:
+                  "Three reading passages with a total of 40 questions.",
+              },
+              {
+                id: 3,
+                title: "Writing",
+                questions: 2,
+                duration: "60 minutes",
+                description:
+                  "Two writing tasks: a graph/chart description and an essay.",
+              },
+              {
+                id: 4,
+                title: "Speaking",
+                questions: 3,
+                duration: "15 minutes",
+                description: "Three-part speaking assessment with an examiner.",
+              },
+            ],
+          });
+          setIsLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error("Error fetching test data:", error);
+        toast.error("Failed to load test", {
+          description: "Please try again later",
+        });
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestData();
+  }, [testId]);
 
   const handleStartTest = () => {
     setShowInstructions(false);
+    toast.success("Test ready to begin", {
+      description: "You can start with any section or begin the full test",
+    });
   };
 
   const startTestSection = (sectionIndex) => {
@@ -91,13 +131,29 @@ const TestDetails = () => {
     const minutes = parseInt(durationParts[0]);
     setTimeRemaining(minutes * 60);
 
+    toast.info(`Starting ${test.sections[sectionIndex].title} section`, {
+      description: `You have ${minutes} minutes to complete this section`,
+    });
+
     // Start the timer
     const timer = setInterval(() => {
       setTimeRemaining((prevTime) => {
         if (prevTime <= 1) {
           clearInterval(timer);
+          toast.warning("Time's up!", {
+            description: "Your section will be submitted automatically",
+          });
+          setTimeout(() => completeTest(), 1500);
           return 0;
         }
+
+        // Show warning when 1 minute remaining
+        if (prevTime === 60) {
+          toast.warning("1 minute remaining", {
+            description: "Please finish your answers soon",
+          });
+        }
+
         return prevTime - 1;
       });
     }, 1000);
@@ -109,12 +165,23 @@ const TestDetails = () => {
   const completeTest = () => {
     setTestInProgress(false);
     setTestCompleted(true);
+
     // In a real app, we would submit test answers to the backend here
+    toast.success("Test completed!", {
+      description: "Your answers have been submitted successfully",
+    });
 
     // Navigate to results page after a delay
     setTimeout(() => {
       navigate(`/test-results/${testId}`);
     }, 2000);
+  };
+
+  const handleAnswerChange = (questionId, answer) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }));
   };
 
   const SectionItem = ({ section }: { section: TestSection }) => (
@@ -135,6 +202,17 @@ const TestDetails = () => {
       </CardContent>
     </Card>
   );
+
+  if (isLoading || !test) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading test details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">

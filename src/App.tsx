@@ -1,9 +1,9 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { useRoutes, Routes, Route, Navigate } from "react-router-dom";
-import Home from "./components/home";
 import routes from "tempo-routes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
+import Dashboard from "./components/Dashboard";
 
 // Lazy load detail components for better performance
 const CourseDetails = lazy(() => import("./components/CourseDetails"));
@@ -44,7 +44,7 @@ function AppRoutes() {
           path="/"
           element={
             <ProtectedRoute>
-              <Home />
+              <Dashboard />
             </ProtectedRoute>
           }
         />
@@ -60,7 +60,9 @@ function AppRoutes() {
           path="/course/:courseId"
           element={
             <ProtectedRoute>
-              <CourseDetails />
+              <Suspense fallback={<p>Loading...</p>}>
+                <CourseDetails />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -68,7 +70,9 @@ function AppRoutes() {
           path="/test/:testId"
           element={
             <ProtectedRoute>
-              <TestDetails />
+              <Suspense fallback={<p>Loading...</p>}>
+                <TestDetails />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -76,7 +80,9 @@ function AppRoutes() {
           path="/class/:classId"
           element={
             <ProtectedRoute>
-              <ClassDetails />
+              <Suspense fallback={<p>Loading...</p>}>
+                <ClassDetails />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -84,7 +90,9 @@ function AppRoutes() {
           path="/courses"
           element={
             <ProtectedRoute>
-              <AllCourses />
+              <Suspense fallback={<p>Loading...</p>}>
+                <AllCourses />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -92,15 +100,19 @@ function AppRoutes() {
           path="/tests"
           element={
             <ProtectedRoute>
-              <AllTests />
+              <Suspense fallback={<p>Loading...</p>}>
+                <AllTests />
+              </Suspense>
             </ProtectedRoute>
           }
         />
         <Route
-          path="/schedule"
+          path="/classes"
           element={
             <ProtectedRoute>
-              <ClassSchedule />
+              <Suspense fallback={<p>Loading...</p>}>
+                <ClassSchedule />
+              </Suspense>
             </ProtectedRoute>
           }
         />

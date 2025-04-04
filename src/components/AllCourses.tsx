@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 interface CourseCardProps {
   id: string;
@@ -112,8 +113,11 @@ const AllCourses = () => {
       setEnrolledCourses((prev) => [...prev, courseId]);
       setEnrollingCourse(null);
 
-      // Show success message (in a real app, we would use a toast notification)
-      alert("Successfully enrolled in the course!");
+      // Show success message with toast notification
+      toast.success("Successfully enrolled in the course!", {
+        description: `You are now enrolled in ${availableCourses.find((course) => course.id === courseId)?.title}`,
+        duration: 3000,
+      });
     }, 1500);
   };
 

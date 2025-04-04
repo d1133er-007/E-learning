@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,17 +14,56 @@ import {
   FileText,
   MessageSquare,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getClassById, enrollInClass, markClassAttendance, getClassEnrollmentCount } from "@/services/classService";
 
 const ClassDetails = () => {
   const { classId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [classData, setClassData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
-  // Mock data for a class
-  const classData = {
+  useEffect(() => {
+    const fetchClassData = async () => {
+      if (!classId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch class data
+        const data = await getClassById(classId);
+        setClassData(data);
+        
+        // Fetch enrollment count
+        const count = await getClassEnrollmentCount(classId);
+        setEnrollmentCount(count);
+        
+        // Check if user is enrolled
+        // For demo purposes, we'll assume the user is enrolled if they've joined the class
+        // In a real app, you would check the user_classes table
+        
+      } catch (err) {
+        console.error("Error fetching class data:", err);
+        setError("Failed to load class data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchClassData();
+  }, [classId]);
+  
+  // If no real data is fetched, use mock data
+  const classInfo = classData || {
     id: classId,
     title: "Speaking Practice: Part 2 Long Turn",
     instructor: "James Wilson",
@@ -34,7 +73,7 @@ const ClassDetails = () => {
     date: "Tomorrow",
     time: "10:00 AM",
     duration: "60 minutes",
-    enrolled: 24,
+    enrolled: enrollmentCount || 24,
     maxCapacity: 30,
     level: "Intermediate",
     description:
@@ -57,27 +96,51 @@ const ClassDetails = () => {
     status: "upcoming", // upcoming, live, completed
   };
 
-  const handleJoinClass = () => {
+  const handleJoinClass = async () => {
+    if (!user || !classId) return;
+    
     setIsJoining(true);
-
-    // Simulate connection delay
-    let count = 3;
-    setCountdown(count);
-
-    const timer = setInterval(() => {
-      count -= 1;
-      setCountdown(count);
-
-      if (count <= 0) {
-        clearInterval(timer);
-        setIsJoining(false);
-        setHasJoined(true);
+    
+    try {
+      // If not enrolled, enroll the user first
+      if (!isEnrolled) {
+        await enrollInClass(user.id, classId);
+        setIsEnrolled(true);
       }
-    }, 1000);
+      
+      // Mark attendance
+      await markClassAttendance(user.id, classId, true);
+      
+      // Simulate connection delay
+      let count = 3;
+      setCountdown(count);
+      
+      const timer = setInterval(() => {
+        count -= 1;
+        setCountdown(count);
+        
+        if (count <= 0) {
+          clearInterval(timer);
+          setIsJoining(false);
+          setHasJoined(true);
+        }
+      }, 1000);
+    } catch (err) {
+      console.error("Error joining class:", err);
+      setIsJoining(false);
+    }
   };
 
-  const handleLeaveClass = () => {
-    setHasJoined(false);
+  const handleLeaveClass = async () => {
+    if (!user || !classId) return;
+    
+    try {
+      // Mark attendance as false when leaving
+      await markClassAttendance(user.id, classId, false);
+      setHasJoined(false);
+    } catch (err) {
+      console.error("Error leaving class:", err);
+    }
   };
 
   const toggleMaterials = () => {
@@ -86,6 +149,15 @@ const ClassDetails = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg">Loading class details...</p>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg text-red-500">{error}</p>
+        </div>
+      ) : (
       {/* Header */}
       <div className="bg-primary/10 py-8">
         <div className="container mx-auto px-4">
@@ -100,12 +172,12 @@ const ClassDetails = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <Badge className="mb-2">{classData.level}</Badge>
-              <h1 className="text-3xl font-bold mb-2">{classData.title}</h1>
+              <h1 className="text-3xl font-bold mb-2">{classInfo.title}</h1>
               <div className="flex items-center text-sm">
-                <Calendar size={16} className="mr-1" /> {classData.date}
+                <Calendar size={16} className="mr-1" /> {classInfo.date}
                 <span className="mx-2">•</span>
-                <Clock size={16} className="mr-1" /> {classData.time} (
-                {classData.duration})
+                <Clock size={16} className="mr-1" /> {classInfo.time} (
+                {classInfo.duration})
               </div>
             </div>
             {isJoining ? (
@@ -139,11 +211,11 @@ const ClassDetails = () => {
                 <CardTitle>Class Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="mb-6">{classData.description}</p>
+                <p className="mb-6">{classInfo.description}</p>
 
                 <h3 className="font-medium mb-3">What You'll Learn</h3>
                 <ul className="space-y-2 mb-6">
-                  {classData.topics.map((topic, index) => (
+                  {classInfo.topics.map((topic, index) => (
                     <li key={index} className="flex items-start">
                       <div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center mr-2 mt-0.5 flex-shrink-0">
                         {index + 1}
@@ -157,7 +229,7 @@ const ClassDetails = () => {
                   <div>
                     <h3 className="font-medium mb-3">Prerequisites</h3>
                     <ul className="space-y-2">
-                      {classData.prerequisites.map((item, index) => (
+                      {classInfo.prerequisites.map((item, index) => (
                         <li key={index} className="text-sm">
                           {item}
                         </li>
@@ -167,7 +239,7 @@ const ClassDetails = () => {
                   <div>
                     <h3 className="font-medium mb-3">Materials Needed</h3>
                     <ul className="space-y-2">
-                      {classData.materials.map((item, index) => (
+                      {classInfo.materials.map((item, index) => (
                         <li key={index} className="text-sm">
                           {item}
                         </li>
@@ -192,7 +264,7 @@ const ClassDetails = () => {
                       variant="outline"
                       className="text-green-800 border-green-300 bg-green-100"
                     >
-                      {classData.enrolled + 1}/{classData.maxCapacity}{" "}
+                      {classInfo.enrolled + 1}/{classInfo.maxCapacity}{" "}
                       Participants
                     </Badge>
                   </div>
@@ -283,17 +355,17 @@ const ClassDetails = () => {
                 <div className="flex items-center mb-4">
                   <Avatar className="h-12 w-12 mr-4">
                     <AvatarImage
-                      src={classData.instructorImage}
-                      alt={classData.instructor}
+                      src={classInfo.instructorImage}
+                      alt={classInfo.instructor}
                     />
                     <AvatarFallback>
-                      {classData.instructor.charAt(0)}
+                      {classInfo.instructor.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-medium">{classData.instructor}</h3>
+                    <h3 className="font-medium">{classInfo.instructor}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {classData.instructorRole}
+                      {classInfo.instructorRole}
                     </p>
                   </div>
                 </div>
@@ -313,25 +385,25 @@ const ClassDetails = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Date:</span>
-                  <span>{classData.date}</span>
+                  <span>{classInfo.date}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Time:</span>
-                  <span>{classData.time}</span>
+                  <span>{classInfo.time}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duration:</span>
-                  <span>{classData.duration}</span>
+                  <span>{classInfo.duration}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Level:</span>
-                  <span>{classData.level}</span>
+                  <span>{classInfo.level}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Enrollment:</span>
                   <span>
                     <Users size={14} className="inline mr-1" />
-                    {classData.enrolled}/{classData.maxCapacity}
+                    {classInfo.enrolled}/{classInfo.maxCapacity}
                   </span>
                 </div>
                 <div className="pt-4">
@@ -360,6 +432,8 @@ const ClassDetails = () => {
           </div>
         </div>
       </div>
+    </div>
+      )}
     </div>
   );
 };
