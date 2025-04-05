@@ -4,6 +4,7 @@ import routes from "tempo-routes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./components/Dashboard";
+import LandingPage from "./components/LandingPage";
 
 // Lazy load detail components for better performance
 const CourseDetails = lazy(() => import("./components/CourseDetails"));
@@ -40,8 +41,9 @@ function AppRoutes() {
   return (
     <>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
