@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { PageTransition, SectionTransition } from "./ui/page-transition";
 
 interface TestCardProps {
   id: string;
@@ -142,7 +144,7 @@ const AllTests = () => {
     return matchesSearch && matchesType;
   });
 
-  const handleStartTest = (e, testId) => {
+  const handleStartTest = (e: React.MouseEvent, testId: string) => {
     e.stopPropagation(); // Prevent navigation
     toast.info("Test starting", {
       description: "Preparing your test environment...",
@@ -152,10 +154,26 @@ const AllTests = () => {
     setTimeout(() => navigate(`/test/${testId}`), 500);
   };
 
+  const testVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.05,
+        duration: 0.5,
+      },
+    }),
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b">
+    <PageTransition className="bg-slate-50">
+      <motion.header
+        className="sticky top-0 z-10 bg-white border-b"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="container mx-auto px-4 py-3 flex items-center">
           <Button
             variant="ghost"
@@ -167,12 +185,10 @@ const AllTests = () => {
           </Button>
           <h1 className="text-xl font-bold">Practice Tests</h1>
         </div>
-      </header>
+      </motion.header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <SectionTransition className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -199,62 +215,77 @@ const AllTests = () => {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </SectionTransition>
 
-        {/* Scheduled Tests Section */}
         {scheduledTests.length > 0 && (
-          <section className="mb-10">
+          <SectionTransition className="mb-10" delay={0.1}>
             <h2 className="text-xl font-semibold mb-4">
               Upcoming Scheduled Tests
             </h2>
-            <div className="space-y-4">
-              {scheduledTests.map((test) => (
-                <Card
+            <motion.div
+              className="space-y-4"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+            >
+              {scheduledTests.map((test, index) => (
+                <motion.div
                   key={test.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/test/${test.id}`)}
+                  variants={testVariants}
+                  custom={index}
+                  whileHover={{ y: -5 }}
                 >
-                  <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div className="mb-4 md:mb-0">
-                      <Badge
-                        variant={
-                          test.type === "Mock Test"
-                            ? "destructive"
-                            : test.type === "Practice Test"
-                              ? "default"
-                              : "outline"
-                        }
-                        className="mb-2"
-                      >
-                        {test.type}
-                      </Badge>
-                      <h3 className="font-medium text-lg">{test.title}</h3>
-                      <div className="flex items-center text-sm text-muted-foreground mt-1">
-                        <Clock size={14} className="mr-1" /> {test.duration}
-                        <span className="mx-2">•</span>
-                        {test.questions} questions
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="mr-4 text-right">
-                        <div className="text-sm font-medium">
-                          <Calendar size={14} className="inline mr-1" />{" "}
-                          {test.date}
+                  <Card
+                    className="hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => navigate(`/test/${test.id}`)}
+                  >
+                    <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                      <div className="mb-4 md:mb-0">
+                        <Badge
+                          variant={
+                            test.type === "Mock Test"
+                              ? "destructive"
+                              : test.type === "Practice Test"
+                                ? "default"
+                                : "outline"
+                          }
+                          className="mb-2"
+                        >
+                          {test.type}
+                        </Badge>
+                        <h3 className="font-medium text-lg">{test.title}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                          <Clock size={14} className="mr-1" /> {test.duration}
+                          <span className="mx-2">•</span>
+                          {test.questions} questions
                         </div>
                       </div>
-                      <Button onClick={(e) => handleStartTest(e, test.id)}>
-                        Start Test
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="flex items-center">
+                        <div className="mr-4 text-right">
+                          <div className="text-sm font-medium">
+                            <Calendar size={14} className="inline mr-1" />{" "}
+                            {test.date}
+                          </div>
+                        </div>
+                        <Button onClick={(e) => handleStartTest(e, test.id)}>
+                          Start Test
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
-            </div>
-          </section>
+            </motion.div>
+          </SectionTransition>
         )}
 
-        {/* Available Tests Section */}
-        <section>
+        <SectionTransition delay={0.2}>
           <h2 className="text-xl font-semibold mb-4">
             Available Practice Tests
           </h2>
@@ -270,49 +301,66 @@ const AllTests = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAvailableTests.map((test) => (
-                <Card
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.05,
+                  },
+                },
+              }}
+            >
+              {filteredAvailableTests.map((test, index) => (
+                <motion.div
                   key={test.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/test/${test.id}`)}
+                  variants={testVariants}
+                  custom={index}
+                  whileHover={{ y: -5 }}
                 >
-                  <CardHeader className="pb-2">
-                    <Badge
-                      variant={
-                        test.type === "Mock Test"
-                          ? "destructive"
-                          : test.type === "Practice Test"
-                            ? "default"
-                            : "outline"
-                      }
-                      className="w-fit mb-2"
-                    >
-                      {test.type}
-                    </Badge>
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center">
-                        <Clock size={14} className="mr-1" /> {test.duration}
+                  <Card
+                    className="hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => navigate(`/test/${test.id}`)}
+                  >
+                    <CardHeader className="pb-2">
+                      <Badge
+                        variant={
+                          test.type === "Mock Test"
+                            ? "destructive"
+                            : test.type === "Practice Test"
+                              ? "default"
+                              : "outline"
+                        }
+                        className="w-fit mb-2"
+                      >
+                        {test.type}
+                      </Badge>
+                      <CardTitle className="text-lg">{test.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-between text-sm text-muted-foreground mb-4">
+                        <div className="flex items-center">
+                          <Clock size={14} className="mr-1" /> {test.duration}
+                        </div>
+                        <div>{test.questions} questions</div>
                       </div>
-                      <div>{test.questions} questions</div>
-                    </div>
-                    <Button
-                      className="w-full"
-                      onClick={(e) => handleStartTest(e, test.id)}
-                    >
-                      Start Test
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <Button
+                        className="w-full"
+                        onClick={(e) => handleStartTest(e, test.id)}
+                      >
+                        Start Test
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
-        </section>
+        </SectionTransition>
       </main>
-    </div>
+    </PageTransition>
   );
 };
 

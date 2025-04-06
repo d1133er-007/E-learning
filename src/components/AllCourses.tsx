@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { PageTransition } from "./ui/page-transition";
 
 interface CourseCardProps {
   id: string;
@@ -127,10 +129,27 @@ const AllCourses = () => {
     );
   };
 
+  const courseVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+      },
+    }),
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <PageTransition className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b">
+      <motion.header
+        className="sticky top-0 z-10 bg-white border-b"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="container mx-auto px-4 py-3 flex items-center">
           <Button
             variant="ghost"
@@ -142,14 +161,28 @@ const AllCourses = () => {
           </Button>
           <h1 className="text-xl font-bold">All Available Courses</h1>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {availableCourses.map((course) => (
-            <div
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.1,
+              },
+            },
+          }}
+        >
+          {availableCourses.map((course, index) => (
+            <motion.div
               key={course.id}
+              variants={courseVariants}
+              custom={index}
+              whileHover={{ y: -5 }}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => navigate(`/course/${course.id}`)}
             >
@@ -196,11 +229,11 @@ const AllCourses = () => {
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </main>
-    </div>
+    </PageTransition>
   );
 };
 

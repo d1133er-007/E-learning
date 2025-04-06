@@ -12,6 +12,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { PageTransition, SectionTransition } from "./ui/page-transition";
 
 interface TestSection {
   id: number;
@@ -184,40 +186,43 @@ const TestDetails = () => {
     }));
   };
 
-  const SectionItem = ({ section }: { section: TestSection }) => (
-    <Card className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium text-lg">{section.title}</h4>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
-              <Clock size={14} className="inline mr-1" /> {section.duration}
-            </span>
-            <Badge variant="outline">{section.questions} questions</Badge>
-          </div>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {section.description}
-        </p>
-      </CardContent>
-    </Card>
-  );
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+      },
+    }),
+  };
 
   if (isLoading || !test) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
+      <PageTransition className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-muted-foreground">Loading test details...</p>
-        </div>
-      </div>
+        </motion.div>
+      </PageTransition>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-12">
+    <PageTransition className="min-h-screen bg-slate-50 pb-12">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground py-8">
+      <motion.div
+        className="bg-primary text-primary-foreground py-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="container mx-auto px-4">
           <Button
             variant="ghost"
@@ -246,10 +251,15 @@ const TestDetails = () => {
             {test.questions} questions
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main content */}
-      <div className="container mx-auto px-4 py-8">
+      <motion.div
+        className="container mx-auto px-4 py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         {showInstructions ? (
           <Card className="mb-8 max-w-3xl mx-auto">
             <CardHeader>
@@ -332,36 +342,53 @@ const TestDetails = () => {
             ) : (
               <>
                 <h2 className="text-xl font-semibold mb-4">Test Sections</h2>
-                {test.sections.map((section, index) => (
-                  <div key={section.id} className="mb-4">
-                    <Card className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-lg">
-                            {section.title}
-                          </h4>
-                          <div className="flex items-center space-x-4">
-                            <span className="text-sm text-muted-foreground">
-                              <Clock size={14} className="inline mr-1" />{" "}
-                              {section.duration}
-                            </span>
-                            <Badge variant="outline">
-                              {section.questions} questions
-                            </Badge>
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.1,
+                      },
+                    },
+                  }}
+                >
+                  {test.sections.map((section, index) => (
+                    <motion.div
+                      key={section.id}
+                      className="mb-4"
+                      variants={sectionVariants}
+                      custom={index}
+                    >
+                      <Card className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-medium text-lg">
+                              {section.title}
+                            </h4>
+                            <div className="flex items-center space-x-4">
+                              <span className="text-sm text-muted-foreground">
+                                <Clock size={14} className="inline mr-1" />{" "}
+                                {section.duration}
+                              </span>
+                              <Badge variant="outline">
+                                {section.questions} questions
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          {section.description}
-                        </p>
-                        <div className="flex justify-end">
-                          <Button onClick={() => startTestSection(index)}>
-                            Start Section
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {section.description}
+                          </p>
+                          <div className="flex justify-end">
+                            <Button onClick={() => startTestSection(index)}>
+                              Start Section
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </motion.div>
 
                 <div className="flex justify-between mt-8">
                   <Button
@@ -379,20 +406,22 @@ const TestDetails = () => {
           </div>
         )}
 
-        <Card className="mt-8 max-w-3xl mx-auto bg-muted/30 border-dashed">
-          <CardContent className="p-6 flex items-center">
-            <HelpCircle className="h-10 w-10 text-muted-foreground mr-4" />
-            <div>
-              <h3 className="font-medium mb-1">Need help?</h3>
-              <p className="text-sm text-muted-foreground">
-                If you have any questions about this test or encounter technical
-                issues, please contact our support team.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+        <SectionTransition delay={0.4}>
+          <Card className="mt-8 max-w-3xl mx-auto bg-muted/30 border-dashed">
+            <CardContent className="p-6 flex items-center">
+              <HelpCircle className="h-10 w-10 text-muted-foreground mr-4" />
+              <div>
+                <h3 className="font-medium mb-1">Need help?</h3>
+                <p className="text-sm text-muted-foreground">
+                  If you have any questions about this test or encounter
+                  technical issues, please contact our support team.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </SectionTransition>
+      </motion.div>
+    </PageTransition>
   );
 };
 

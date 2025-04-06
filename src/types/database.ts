@@ -41,6 +41,16 @@ export interface Database {
         Insert: Omit<TestSection, "id">;
         Update: Partial<Omit<TestSection, "id">>;
       };
+      achievements: {
+        Row: Achievement;
+        Insert: Omit<Achievement, "id">;
+        Update: Partial<Omit<Achievement, "id">>;
+      };
+      user_achievements: {
+        Row: UserAchievement;
+        Insert: Omit<UserAchievement, "id">;
+        Update: Partial<Omit<UserAchievement, "id">>;
+      };
     };
   };
 }
@@ -133,5 +143,21 @@ export interface UserClass {
   class_id: string;
   enrolled_date: string;
   attended?: boolean;
+  created_at?: string;
+}
+
+export interface Achievement {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  created_at?: string;
+}
+
+export interface UserAchievement {
+  id: number;
+  user_id: string;
+  achievement_id: number;
+  unlocked_at: string;
   created_at?: string;
 }

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function SignupForm() {
   const [fullName, setFullName] = useState("");
@@ -64,95 +65,125 @@ export default function SignupForm() {
     }
   };
 
+  const formVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <Card className="w-full max-w-md mx-auto bg-white">
-      <CardHeader className="space-y-1">
-        <div className="flex items-center justify-center mb-2">
-          <BookOpen className="h-10 w-10 text-primary" />
-        </div>
-        <CardTitle className="text-2xl font-bold text-center">
-          Create Account
-        </CardTitle>
-        <CardDescription className="text-center">
-          Enter your details to create a new account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              placeholder="John Doe"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              "Sign Up"
+    <motion.div initial="hidden" animate="visible" variants={formVariants}>
+      <Card className="w-full max-w-md mx-auto bg-white">
+        <motion.div variants={itemVariants}>
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-2">
+              <BookOpen className="h-10 w-10 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">
+              Create Account
+            </CardTitle>
+            <CardDescription className="text-center">
+              Enter your details to create a new account
+            </CardDescription>
+          </CardHeader>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter>
-        <div className="text-center text-sm w-full">
-          Already have an account?{" "}
-          <Button
-            variant="link"
-            className="px-0"
-            onClick={() => navigate("/login")}
-          >
-            Sign in
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div className="space-y-2" variants={itemVariants}>
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </motion.div>
+              <motion.div className="space-y-2" variants={itemVariants}>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </motion.div>
+              <motion.div className="space-y-2" variants={itemVariants}>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </motion.div>
+              <motion.div className="space-y-2" variants={itemVariants}>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Sign Up"
+                  )}
+                </Button>
+              </motion.div>
+            </form>
+          </CardContent>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <CardFooter>
+            <div className="text-center text-sm w-full">
+              Already have an account?{" "}
+              <Button
+                variant="link"
+                className="px-0"
+                onClick={() => navigate("/login")}
+              >
+                Sign in
+              </Button>
+            </div>
+          </CardFooter>
+        </motion.div>
+      </Card>
+    </motion.div>
   );
 }

@@ -93,10 +93,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
-export function useUser() {
+// Define the hook as a named function declaration first
+function useUserHook() {
   const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error("useUser must be used within a UserProvider");
   }
   return context;
 }
+
+// Then export it as a constant to be compatible with Fast Refresh
+export const useUser = useUserHook;
